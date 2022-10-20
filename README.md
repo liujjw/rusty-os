@@ -1,2 +1,2 @@
-# rustyos
+# rusty-os
 
