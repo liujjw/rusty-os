@@ -1,7 +1,7 @@
-eeprom chip on rpi4CFILES = $(wildcard *.c)
+CFILES = $(wildcard *.c)
 OFILES = $(CFILES:.c=.o)
 GCCFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
-GCCPATH = ../arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-elf/bin
+GCCPATH = ../../arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-elf/bin
 
 all: clean kernel8.img
 

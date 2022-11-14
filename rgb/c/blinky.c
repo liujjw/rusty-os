@@ -25,12 +25,14 @@ static void dot() {
   *GPIO_SET0 = 0b1 << 16;
   spin_sleep_ms(SHORT_PAUSE);
   *GPIO_CLR0 = 0b1 << 16; 
+  spin_sleep_ms(SHORT_PAUSE);
 }
 
 static void dash() {
   *GPIO_SET0 = 0b1 << 16;
   spin_sleep_ms(MEDIUM_PAUSE);
   *GPIO_CLR0 = 0b1 << 16; 
+  spin_sleep_ms(MEDIUM_PAUSE);
 }
 
 static void space() {
