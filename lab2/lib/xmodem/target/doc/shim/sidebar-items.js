@@ -1,1 +1,0 @@
-initSidebarItems({"macro":[["const_assert",""],["const_assert_eq",""],["const_assert_size",""],["ioerr",""],["newioerr",""]],"mod":[["io","Traits, helpers, and type definitions for core I/O functionality."],["macros",""]]});
