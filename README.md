@@ -1,8 +1,17 @@
 # setup
 tested on fedora 36 and ubuntu 18.04. `bin/setup.sh` and `export PATH=$HOME/.cargo/bin:$PATH` for rust. `arm gnu toolchain` also be required for c builds
 
-# build and run
-use `cargo`, unless `Makefile` provided in directory
+# build 
+use `cargo`, unless `Makefile` provided in directory. 
+
+# run 
+end result of build step should be a binary; rename to `kernel8.img` and paste into boot partition of rpi4 storage (using default `.py` install script will overwrite other files). rpi4 storage should already be initialized with [rpi4 imager](https://www.raspberrypi.com/software/) (we only modify `kernel8.img`).
+
+## run configs
+use default `configs.txt` in `boot` partition from raspbian 32-bit os install from the imager EXCEPT:
+- force 64-bit mode by deleting other `kernel`s except `kernel8.img` OR set `arm_64bit=1`
+- (default) 64-bit low peripheral mode
+- if issues with UART, set `core_freq_min=500` 
 
 # nota bene
 - `ttywrite` crate tested to build only with `rustc nightly 1.67` and `optin_builtin_traits` -> `auto_traits` in shim, not `1.3x` from `setup.sh` (issue with `structopt` and `clap`) 

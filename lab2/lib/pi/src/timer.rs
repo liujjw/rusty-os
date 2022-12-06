@@ -32,17 +32,32 @@ impl Timer {
     /// Reads the system timer's counter and returns Duration.
     /// `CLO` and `CHI` together can represent the number of elapsed microseconds.
     pub fn read(&self) -> Duration {
-        unimplemented!()
+        let low = self.registers.CLO.read();
+        let high: u64 = (self.registers.CHI.read() as u64) << 32;
+        Duration::from_micros(high + (low as u64))
     }
 }
 
 /// Returns current time.
 pub fn current_time() -> Duration {
-    unimplemented!()
+    let timer = Timer::new();
+    timer.read()
 }
 
 /// Spins until `t` duration have passed.
 pub fn spin_sleep(t: Duration) {
-    unimplemented!()
+    let start = current_time();
+    loop {
+        // assume if `t` is secs and `elapsed` is ms the partialeq trait impl handles it 
+        if let Some(elapsed) = current_time().checked_sub(start.clone()) {
+            if (&elapsed).ge(&t) {
+                return;
+            }
+        } else {
+            // if negative, sub goes to None, but sub cannot be negative by logic
+            // sub overflows to None, in which case assume `t` passed 
+            return;
+        }
+    }
 }
 

@@ -5,7 +5,7 @@ use structopt;
 use structopt_derive::StructOpt;
 use xmodem::Xmodem;
 
-use xmodem::progress::{Progress};
+use xmodem::{Progress};
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -57,32 +57,40 @@ fn main() {
     use std::io::{self, BufReader};
 
     let opt = Opt::from_args();
-    let port = serial::open(&opt.tty_path).expect("path points to invalid TTY");
-    (&mut port).set_timeout(Duration::new(timeout, 0)).expect("failed to set timeout");
-    let settings = (&port).read_settings().expect("failed to read settings");
+    let mut port = serial::open(&opt.tty_path).expect("path points to invalid TTY");
+    (&mut port).set_timeout(Duration::new(opt.timeout, 0)).expect("failed to set timeout");
+    let mut settings = (&port).read_settings().expect("failed to read settings");
     (&mut settings).set_baud_rate(opt.baud_rate).expect("failed to set baud rate");
     (&mut settings).set_char_size(opt.char_width);
     (&mut settings).set_flow_control(opt.flow_control);
     (&mut settings).set_stop_bits(opt.stop_bits);
-    (&mut port).write_settings(settings).expect("failed to write settings");
+    (&mut port).write_settings(&settings).expect("failed to write settings");
 
 
-    let to = port;
-    let from;
+    let mut to = port;
+    let mut buf_reader = None;
     if let Some(input_path_buf) = opt.input {
         let file = File::open(input_path_buf).expect("invalid file path");
-        let mut buf_reader = BufReader::new(file);
-        from = buf_reader; 
-    } else {
-        from = io::stdin();
+        buf_reader = Some(BufReader::new(file));
     }
 
-    let num_bytes;
     if opt.raw {
-        let Ok(num_bytes) = io::copy(&mut from, &mut to).expect("raw transmission failed");
+        let num_bytes;
+        if let Some(mut reader) = buf_reader {
+            num_bytes = io::copy(&mut reader, &mut to).expect("raw transmission failed");
+        } else {
+            num_bytes = io::copy(&mut io::stdin(), &mut to).expect("raw transmission failed");
+        }
+        println!("Done: {} bytes written in total", num_bytes);
     } else {
-        let Ok(num_bytes) = Xmodem::transmit_with_progress(from, to, progress_fn)
+        let num_bytes;
+        if let Some(reader) = buf_reader {
+            num_bytes = Xmodem::transmit_with_progress(reader, to, progress_fn)
+                .expect("xmodem transmission failed");
+        } else {
+            num_bytes = Xmodem::transmit_with_progress(io::stdin(), to, progress_fn)
             .expect("xmodem transmission failed");
+        }
+        println!("Done: {} bytes written in total", num_bytes);
     }
-    println!("Done: {} bytes written in total", num_bytes);
 }
