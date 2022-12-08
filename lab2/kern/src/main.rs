@@ -25,6 +25,8 @@ use console::kprintln;
 
 use pi::uart::MiniUart;
 use core::fmt::Write;
+use pi::timer::spin_sleep;
+use core::time::Duration;
 
 unsafe fn kmain() -> ! {
     let mut mu = MiniUart::new();

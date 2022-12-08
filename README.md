@@ -10,8 +10,11 @@ end result of build step should be a binary; rename to `kernel8.img` and paste i
 ## run configs
 use default `configs.txt` in `boot` partition from raspbian 32-bit os install from the imager EXCEPT:
 - force 64-bit mode by deleting other `kernel`s except `kernel8.img` OR set `arm_64bit=1`
-- (default) 64-bit low peripheral mode
-- if issues with UART, set `core_freq_min=500` 
+- (default) 64-bit low peripheral mode (important for peripheral register base address)
+- set `core_freq_min=500` for mini UART baud rate calculation to work properly
+
+## uart
+`sudo gpasswd --add <your-username> dialout` or use `sudo` before `sudo screen /dev/ttyUSB0 115200` to access mini UART
 
 # nota bene
 - `ttywrite` crate tested to build only with `rustc nightly 1.67` and `optin_builtin_traits` -> `auto_traits` in shim, not `1.3x` from `setup.sh` (issue with `structopt` and `clap`) 

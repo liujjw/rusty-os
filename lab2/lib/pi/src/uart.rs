@@ -17,6 +17,10 @@ const MU_REG_BASE: usize = IO_BASE + 0x215040;
 /// The `AUXENB` register from page 8 of the BCM2711 documentation.
 const AUX_ENABLES: *mut Volatile<u8> = (IO_BASE + 0x215004) as *mut Volatile<u8>;
 
+/// core_freq_min=500 in config.txt
+const AUX_UART_CLOCK: u32 = 500000000;
+const BAUD_RATE: u32 = 115200;
+
 /// Enum representing bit fields of the `AUX_MU_LSR_REG` register.
 #[repr(u8)]
 enum LsrStatus {
@@ -58,6 +62,11 @@ pub struct MiniUart {
 }
 
 impl MiniUart {
+
+    fn calc_baud_reg(baud_rate: u32) -> u16 {
+        (AUX_UART_CLOCK / ((baud_rate * 8) - 1)) as u16
+    }
+
     /// Initializes the mini UART by enabling it as an auxiliary peripheral,
     /// setting the data size to 8 bits, setting the BAUD rate to ~115200 (baud
     /// divider of 270), setting GPIO pins 14 and 15 to alternative function 5
@@ -73,9 +82,9 @@ impl MiniUart {
         };
 
         // baud_rate = system_clock_freq / (8 * (baud_register + 1))
-        // assumes sys clock freq = 250 MHz
+        // assumes sys clock freq = 500 MHz set in config
         // can overwrite all bits 
-        registers.BAUD.write(270);
+        registers.BAUD.write(Self::calc_baud_reg(BAUD_RATE));
 
         // set data size to 8 bits
         // cannot overwrite other bits, but is always 1
@@ -163,7 +172,7 @@ impl MiniUart {
 // Implement `fmt::Write` for `MiniUart`. A b'\r' byte should be written
 // before writing any b'\n' byte.
 impl fmt::Write for MiniUart {
-    fn write_str(&mut self, s: &str) -> Result<(), (Error)> {
+    fn write_str(&mut self, s: &str) -> Result<(), (Error)> {;
         for byte in s.bytes() {
             if byte == b'\n' {
                 self.write_byte(b'\r');
