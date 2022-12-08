@@ -17,6 +17,14 @@ pub enum Function {
     Alt5 = 0b010
 }
 
+/// There are 6 32-bit FSEL registers which the GPIO pins are grouped into 
+/// (registers are mapped to (physical) memory locations (MMIO)). Subindex 
+/// each register to get to a specific GPIO pin within its FSEL group. 
+/// 10 pins for every FSEL group, except 8 for last.
+/// 
+/// Each memory address maps to a single byte. Every fifth address maps to the 
+/// first 8 bits/1 byte of a set of 32 bits/4 bytes. We only care about a set of 
+/// 4 addresses which constitute a 4 byte/32 bit word, which we represent as u32.
 #[repr(C)]
 #[allow(non_snake_case)]
 struct Registers {
@@ -89,8 +97,8 @@ impl Gpio<Uninitialized> {
     ///
     /// Panics if `pin` > `53`.
     pub fn new(pin: u8) -> Gpio<Uninitialized> {
-        if pin > 53 {
-            panic!("Gpio::new(): pin {} exceeds maximum of 53", pin);
+        if pin > 57 {
+            panic!("Gpio::new(): pin {} exceeds maximum of 57", pin);
         }
 
         Gpio {
@@ -103,7 +111,21 @@ impl Gpio<Uninitialized> {
     /// Enables the alternative function `function` for `self`. Consumes self
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
-        unimplemented!()
+        let outer: usize = (self.pin / 10) as usize;
+        let inner = self.pin % 10;
+        let inner_shift_multiple = 3;
+        let shift_amnt = inner_shift_multiple * inner;
+        
+        // zero out previous value first, then OR new value in 
+        // to zero out prev but keep other bits, AND 1's for save and 0's for destroy
+        self.registers.FSEL[outer].and_mask(!(0b111 << shift_amnt));
+        self.registers.FSEL[outer].or_mask((function as u32) << shift_amnt);
+
+        Gpio {
+            pin: self.pin,
+            registers: self.registers,
+            _state: PhantomData
+        }
     }
 
     /// Sets this pin to be an _output_ pin. Consumes self and returns a `Gpio`
@@ -122,12 +144,22 @@ impl Gpio<Uninitialized> {
 impl Gpio<Output> {
     /// Sets (turns on) the pin.
     pub fn set(&mut self) {
-        unimplemented!()
+        if self.pin < 32 {
+            // NOTE: just using write for one bit is fine since 
+            // writing 0 to other bits has no effect 
+            self.registers.SET[0].write(0b1 << self.pin)
+        } else {
+            self.registers.SET[1].write(0b1 << (self.pin - 32))
+        }
     }
 
     /// Clears (turns off) the pin.
     pub fn clear(&mut self) {
-        unimplemented!()
+        if self.pin < 32 {
+            self.registers.CLR[0].write(0b1 << self.pin)
+        } else {
+            self.registers.CLR[1].write(0b1 << (self.pin - 32))
+        }
     }
 }
 
@@ -135,6 +167,12 @@ impl Gpio<Input> {
     /// Reads the pin's value. Returns `true` if the level is high and `false`
     /// if the level is low.
     pub fn level(&mut self) -> bool {
-        unimplemented!()
+        if self.pin < 32 {
+            let mask = 0b1 << self.pin;
+            self.registers.LEV[0].has_mask(mask)
+        } else {
+            let mask = 0b1 << (self.pin - 32);
+            self.registers.LEV[1].has_mask(mask)
+        }
     }
 }

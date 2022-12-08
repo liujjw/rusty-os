@@ -23,27 +23,14 @@ pub mod shell;
 
 use console::kprintln;
 
-// FIXME: You need to add dependencies here to
-// test your drivers (Phase 2). Add them as needed.
-
-//-------------------------------------------------------------
-// blinky
-const GPIO_BASE: usize = 0xFE000000 + 0x200000;
-const GPIO_FSEL1: *mut u32 = (GPIO_BASE + 0x04) as *mut u32;
-const GPIO_SET0: *mut u32 = (GPIO_BASE + 0x1C) as *mut u32;
-const GPIO_CLR0: *mut u32 = (GPIO_BASE + 0x28) as *mut u32;
-use pi::timer::spin_sleep;
-use core::time::Duration;
-//-------------------------------------------------------------
+use pi::uart::MiniUart;
+use core::fmt::Write;
 
 unsafe fn kmain() -> ! {
-    // FIXME: Start the shell.
-
+    let mut mu = MiniUart::new();
     loop {
-        GPIO_FSEL1.write_volatile(0b1 << 18);    
-        GPIO_SET0.write_volatile(0b1 << 16);
-        spin_sleep(Duration::new(3, 0));
-        GPIO_CLR0.write_volatile(0b1 << 16);
-        spin_sleep(Duration::new(3, 0));
+        let read = mu.read_byte();
+        mu.write_byte(read);
+        mu.write_str("<-");
     }
 }
